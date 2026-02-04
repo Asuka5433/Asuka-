@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一份神秘礼物</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: url("https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc_gen_image/a5eec282ef3b4c4caa6039752d2878e4.jpeg~tplv-a9rns2rl98-image_dld_watermark_1_5.png") center/cover no-repeat;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        #messageContainer {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* 快手风格弹窗 */
+        .message {
+            position: absolute;
+            padding: 8px 16px;
+            border-radius: 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            color: #222;
+            font-size: 14px;
+            white-space: nowrap;
+            opacity: 0;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            100% { opacity: 1; }
+        }
+        /* 多色渐变 */
+        .msg-pink { background: linear-gradient(90deg, rgba(255,240,245,0.95), rgba(255,220,230,0.95)); }
+        .msg-blue { background: linear-gradient(90deg, rgba(240,248,255,0.95), rgba(220,240,255,0.95)); }
+        .msg-yellow { background: linear-gradient(90deg, rgba(255,250,240,0.95), rgba(255,245,220,0.95)); }
+        .msg-purple { background: linear-gradient(90deg, rgba(245,240,255,0.95), rgba(230,220,255,0.95)); }
+        /* 标签样式 */
+        .msg-tag {
+            font-size: 13px;
+            color: #ff3a7c;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        .msg-heart {
+            font-size: 12px;
+            color: #ff3a7c;
+            margin-right: 3px;
+        }
+        /* 装饰元素样式 */
+        .decor {
+            position: absolute;
+            font-size: 16px;
+            opacity: 0.8;
+            animation: float 3s infinite alternate ease-in-out;
+        }
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-8px) scale(1.1); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        /* 中央大爱心样式 */
+        .center-heart {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 120px;
+            color: #ff3a7c;
+            opacity: 0;
+            z-index: 999;
+            animation: heartBeat 0.8s ease-out forwards;
+        }
+        @keyframes heartBeat {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        .restart-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            padding: 9px 18px;
+            border-radius: 18px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            color: #555;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="messageContainer"></div>
+    <button class="restart-btn" onclick="location.reload()">重新开始</button>
+
+    <script>
+        window.onload = function() {
+            // 原始文案库 + 新增10句温馨文案
+            const originalMessages = [
+                // 原有句子
+                "保持微笑呀", "我想你了", "你过得开心嘛",
+                "好好爱自己", "天冷了，多穿衣服", "今天过得开心嘛",
+                "学会爱自己，才能更好地爱别人", "珍惜每一刻", "别太累啦，偶尔偷懒也好",
+                "天凉了，记得添件衣服，别冻着自己。",
+                "工作再忙，也得按时吃饭，别把胃饿坏了。",
+                "累了就歇会儿，别硬撑着，身体是自己的。",
+                "晚上早点睡，别熬夜，第二天才有精神。",
+                "心里有啥不痛快，就跟人说说，别都憋在心里。",
+                
+                // 新增10个句子
+                "遇到困难别放弃，我一直都在支持你。",
+                "不管多忙，都要留点时间给自己放松。",
+                "记得多喝水，身体水润润的才舒服。",
+                "不开心的时候，吃点甜食心情会变好哦。",
+                "出门记得带伞，别被雨淋到了。",
+                "你值得被爱，也值得拥有所有美好的事物。",
+                "别太苛责自己，你已经做得很棒了。",
+                "有空多出去走走，看看外面的世界。",
+                "给家里打个电话吧，家人也在想你。",
+                "无论发生什么，记得保持一颗乐观的心。"
+            ];
+
+            const container = document.getElementById('messageContainer');
+            let currentZIndex = 1;
+            const padding = { left: 20, right: 40, top: 20, bottom: 100 };
+            const colorClasses = ['msg-pink', 'msg-blue', 'msg-yellow', 'msg-purple'];
+            const decors = ['💖', '⭐', '❤️', '✨', '🌸', '💫'];
+
+            // --- 核心逻辑1：句子重复次数控制（改为2次） ---
+            let messagePool = [];
+            originalMessages.forEach(text => {
+                // 每个句子放入2次，抽完即止
+                for(let i=0; i<2; i++) {
+                    messagePool.push(text);
+                }
+            });
+            // 打乱顺序
+            messagePool = shuffleArray(messagePool);
+            let isFinished = false; // 是否发完所有句子
+
+            // --- 核心逻辑2：全屏均匀分布（网格算法） ---
+            const grid = { x: 3, y: 3 }; // 3x3 网格
+            let lastGridPos = { x: -1, y: -1 }; // 上一次的网格位置
+
+            function createMessage() {
+                if(isFinished) return;
+
+                // 1. 获取句子（如果池为空则停止）
+                if(messagePool.length === 0) {
+                    isFinished = true;
+                    showCenterHeart(); // 显示中央爱心
+                    return;
+                }
+                const randomText = messagePool.pop(); // 从池中取出
+
+                const msg = document.createElement('div');
+                msg.classList.add('message');
+                msg.classList.add(colorClasses[Math.floor(Math.random() * colorClasses.length)]);
+                
+                if (Math.random() > 0.1) {
+                    msg.innerHTML = `<span class="msg-heart">💖</span><span class="msg-tag">提示</span>${randomText}`;
+                } else {
+                    msg.innerText = randomText;
+                }
+
+                // 2. 动态计算宽度（防超屏核心）
+                msg.style.position = 'fixed';
+                msg.style.visibility = 'hidden';
+                container.appendChild(msg);
+                const msgWidth = msg.offsetWidth;
+                const msgHeight = msg.offsetHeight;
+                container.removeChild(msg);
+                msg.style.position = 'absolute';
+                msg.style.visibility = 'visible';
+
+                // 3. 全屏均匀分布逻辑（避免集中）
+                let gridX, gridY;
+                // 确保这次的网格和上次不一样
+                do {
+                    gridX = Math.floor(Math.random() * grid.x);
+                    gridY = Math.floor(Math.random() * grid.y);
+                } while (gridX === lastGridPos.x && gridY === lastGridPos.y);
+                lastGridPos = { x: gridX, y: gridY };
+
+                // 计算当前网格的像素范围
+                const gridWidth = (window.innerWidth - padding.left - padding.right) / grid.x;
+                const gridHeight = (window.innerHeight - padding.top - padding.bottom) / grid.y;
+                const gridLeft = padding.left + gridX * gridWidth;
+                const gridTop = padding.top + gridY * gridHeight;
+
+                // 在网格范围内随机定位
+                const maxLeftInGrid = gridLeft + gridWidth - msgWidth;
+                const maxTopInGrid = gridTop + gridHeight - msgHeight;
+                const randomLeft = gridLeft + Math.random() * (maxLeftInGrid - gridLeft);
+                const randomTop = gridTop + Math.random() * (maxTopInGrid - gridTop);
+
+                // 最终位置
+                msg.style.left = `${randomLeft}px`;
+                msg.style.top = `${randomTop}px`;
+                msg.style.zIndex = currentZIndex++;
+
+                container.appendChild(msg);
+
+                // 4. 生成装饰品
+                if (Math.random() > 0.3) {
+                    createDecor(randomLeft, randomTop, msgWidth, msgHeight);
+                }
+
+                // 5. 控制总数量
+                if (currentZIndex > 120) {
+                    const oldestMsg = container.querySelector('.message');
+                    if (oldestMsg) oldestMsg.remove();
+                    const oldestDecor = container.querySelector('.decor');
+                    if (oldestDecor) oldestDecor.remove();
+                }
+            }
+
+            // 创建装饰品
+            function createDecor(baseLeft, baseTop, msgWidth, msgHeight) {
+                const decor = document.createElement('div');
+                decor.classList.add('decor');
+                decor.innerText = decors[Math.floor(Math.random() * decors.length)];
+                const decorSize = 20;
+
+                const decorMaxLeft = window.innerWidth - decorSize - padding.right;
+                const decorMaxTop = window.innerHeight - decorSize - padding.bottom;
+
+                const randomOffsetX = (Math.random() - 0.5) * 100;
+                const randomOffsetY = (Math.random() - 0.5) * 100;
+                
+                let decorLeft = baseLeft + msgWidth/2 + randomOffsetX - decorSize/2;
+                let decorTop = baseTop + msgHeight/2 + randomOffsetY - decorSize/2;
+
+                decorLeft = Math.max(padding.left, Math.min(decorLeft, decorMaxLeft));
+                decorTop = Math.max(padding.top, Math.min(decorTop, decorMaxTop));
+
+                decor.style.left = `${decorLeft}px`;
+                decor.style.top = `${decorTop}px`;
+                decor.style.zIndex = currentZIndex++;
+
+                container.appendChild(decor);
+
+                setTimeout(() => {
+                    decor.style.opacity = '0';
+                    decor.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => decor.remove(), 500);
+                }, 3000 + Math.random() * 2000);
+            }
+
+            // 显示中央大爱心
+            function showCenterHeart() {
+                const heart = document.createElement('div');
+                heart.classList.add('center-heart');
+                heart.innerText = '💖';
+                document.body.appendChild(heart);
+            }
+
+            // 工具函数：打乱数组
+            function shuffleArray(array) {
+                let currentIndex = array.length,  randomIndex;
+                while (currentIndex != 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            }
+
+            // 启动生成
+            const interval = setInterval(createMessage, 600);
+            // 初始生成
+            for (let i = 0; i < 20; i++) {
+                setTimeout(createMessage, i * 150);
+            }
+        }
+    </script>
+</body>
+</html>
