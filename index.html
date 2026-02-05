@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蒋一凡专属页面 | 终极救援版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: manipulation;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  #particles-js { position: fixed; width: 100%; height: 100%; z-index: 0; }
+  .audio-wave {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: breathe 3s ease-in-out infinite;
+    z-index: 1;
+  }
+  .audio-wave.active { animation: pulse 0.5s ease infinite alternate; }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 0 5px rgba(255, 51, 51, 0.3); }
+    50% { box-shadow: 0 0 0 20px rgba(255, 51, 51, 0.2); }
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.1); opacity: 1; }
+  }
+  .avatar {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 5px solid #ff3333;
+    object-fit: cover;
+    position: absolute;
+    z-index: 2;
+    animation: rotate 20s linear infinite;
+    cursor: pointer;
+  }
+  @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .play-btn {
+    margin-top: 40px;
+    padding: 12px 30px;
+    font-size: 18px;
+    background: #ff3333;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 0 15px #ff3333;
+    transition: 0.3s;
+    z-index: 3;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover { background: #ff6666; transform: scale(1.05); }
+  .music-switch-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #333;
+    color: #fff;
+    border: 2px solid #ff3333;
+    font-size: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    z-index: 3;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .music-switch-btn:hover {
+    background: #ff3333;
+    transform: scale(1.1);
+  }
+  .music-control-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .music-name {
+    color: #fff;
+    margin-top: 15px;
+    font-size: 16px;
+    z-index: 3;
+    position: relative;
+    text-align: center;
+    max-width: 80%;
+  }
+
+  /* 紧急备用输入框样式 */
+  #emergencyBox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #333;
+    color: #fff;
+    padding: 10px;
+    z-index: 9999;
+    display: none; /* 默认隐藏 */
+  }
+  #emergencyBox textarea {
+    width: 100%;
+    height: 80px;
+    background: #444;
+    color: #eee;
+    border: 1px solid #ff3333;
+    margin: 5px 0;
+    padding: 5px;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+  <!-- 紧急备用方案：如果自动加载失败，这里会显示 -->
+  <div id="emergencyBox">
+    <strong>⚠️ 自动加载失败，请手动粘贴 music.json 内容：</strong>
+    <textarea id="jsonInput" placeholder="请把 https://13413.kstore.vip/QingMusic/music.json 打开后的内容复制粘贴到这里..."></textarea>
+    <button onclick="loadFromText()">手动加载</button>
+  </div>
+
+  <div id="particles-js"></div>
+  <div class="audio-wave" id="wave">
+    <img src="avatar.jpg" alt="蒋一凡头像" class="avatar" id="avatar">
+  </div>
+  <div class="music-control-group">
+    <button class="music-switch-btn" onclick="switchMusic('prev')">←</button>
+    <button class="play-btn" onclick="toggleMusic()" id="btn">尝试加载歌单...</button>
+    <button class="music-switch-btn" onclick="switchMusic('next')">→</button>
+  </div>
+  <div class="music-name" id="musicName">正在连接服务器...</div>
+
+  <audio id="bgm" preload="auto">
+    <source src="" type="audio/mpeg" id="audioSource">
+    您的浏览器不支持音频播放
+  
+
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script>
+    // --- 粒子特效初始化 ---
+    particlesJS("particles-js", {
+      "particles": {
+        "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+        "color": { "value": "#ff3333" },
+        "shape": { "type": "circle" },
+        "opacity": { "value": 0.5, "random": true },
+        "size": { "value": 3, "random": true },
+        "line_linked": {
+          "enable": true, "distance": 150, "color": "#ff3333", "opacity": 0.2, "width": 1
+        },
+        "move": { "enable": true, "speed": 1, "direction": "none", "random": true }
+      },
+      "interactivity": {
+        "detect_on": "canvas",
+        "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" } }
+      },
+      "retina_detect": true
+    });
+
+    // --- 全局变量 ---
+    const audio = document.getElementById('bgm');
+    const audioSource = document.getElementById('audioSource');
+    const btn = document.getElementById('btn');
+    const wave = document.getElementById('wave');
+    const musicNameEl = document.getElementById('musicName');
+    const avatarEl = document.getElementById('avatar');
+    const emergencyBox = document.getElementById('emergencyBox');
+    const jsonInput = document.getElementById('jsonInput');
+    
+    let musicList = [];
+    let currentMusicIndex = 0;
+    let isPlaying = false;
+    let animationId;
+
+    // --- 1. 核心加载逻辑：使用 CORS 代理解决跨域 ---
+    const originalUrl = "https://13413.kstore.vip/QingMusic/music.json";
+    // 使用代理服务器前缀
+    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+    const fetchUrl = proxyUrl + originalUrl;
+
+    // 方案A：尝试通过代理自动加载
+    fetch(fetchUrl)
+      .then(response => {
+        if (!response.ok) throw new Error("代理服务器响应异常");
+        return response.json();
+      })
+      .then(data => {
+        handleLoadedData(data);
+      })
+      .catch(error => {
+        console.error("自动加载失败，原因：", error);
+        // 如果自动加载失败，显示手动输入框
+        btn.innerText = "加载失败 ❌";
+        musicNameEl.innerText = "请使用上方手动输入功能";
+        emergencyBox.style.display = "block"; // 显示备用方案
+      });
+
+    // --- 2. 方案B：手动粘贴 JSON 加载（保底方案） ---
+    function loadFromText() {
+      try {
+        const jsonText = jsonInput.value.trim();
+        if (!jsonText) {
+          alert("请先粘贴内容！");
+          return;
+        }
+        const data = JSON.parse(jsonText);
+        handleLoadedData(data);
+        emergencyBox.style.display = "none"; // 隐藏输入框
+        alert("手动加载成功！");
+      } catch (e) {
+        alert("粘贴的内容格式不对，请检查是否是完整的 JSON。");
+        console.error(e);
+      }
+    }
+
+    // --- 3. 处理加载好的音乐数据 ---
+    function handleLoadedData(data) {
+      // 兼容常见的 JSON 格式
+      if (data.list && data.list.length > 0) {
+        musicList = data.list;
+      } else if (Array.isArray(data) && data.length > 0) {
+        // 如果 JSON 直接是数组
+        musicList = data;
+      } else {
+        throw new Error("数据格式不识别");
+      }
+
+      // 初始化第一首
+      loadMusic(0);
+      btn.innerText = `点击播放 ${musicList[0].name || musicList[0].title}`;
+    }
+
+    // --- 4. 加载指定音乐 ---
+    function loadMusic(index) {
+      if (!musicList.length) return;
+      
+      const song = musicList[index];
+      // 兼容 name/title 和 url/path 字段
+      audioSource.src = song.url || song.path;
+      audio.load();
+      musicNameEl.innerText = `当前曲目：${song.name || song.title || '未知歌曲'}`;
+    }
+
+    // --- 5. 播放控制 ---
+    function toggleMusic() {
+      if (!musicList.length) {
+        alert("歌单为空！");
+        return;
+      }
+
+      if (isPlaying) {
+        audio.pause();
+        btn.innerText = `点击播放 ${musicList[currentMusicIndex].name || musicList[currentMusicIndex].title}`;
+        wave.classList.remove('active');
+        cancelAnimationFrame(animationId);
+      } else {
+        audio.play().then(() => {
+          btn.innerText = `正在播放... (点击暂停)`;
+          wave.classList.add('active');
+          simulateWave();
+        }).catch(err => {
+          btn.innerText = "点击屏幕任意处解锁";
+          document.body.addEventListener('click', () => audio.play().then(startPlaying), { once: true });
+        });
+      }
+      isPlaying = !isPlaying;
+    }
+
+    function startPlaying() {
+      btn.innerText = `正在播放... (点击暂停)`;
+      wave.classList.add('active');
+      simulateWave();
+    }
+
+    // --- 6. 切换歌曲 ---
+    function switchMusic(type) {
+      if (!musicList.length) return;
+
+      if (isPlaying) {
+        audio.pause();
+        wave.classList.remove('active');
+        cancelAnimationFrame(animationId);
+        isPlaying = false;
+      }
+
+      currentMusicIndex = type === 'prev' 
+        ? (currentMusicIndex - 1 + musicList.length) % musicList.length
+        : (currentMusicIndex + 1) % musicList.length;
+      
+      loadMusic(currentMusicIndex);
+      btn.innerText = `点击播放 ${musicList[currentMusicIndex].name || musicList[currentMusicIndex].title}`;
+    }
+
+    // --- 7. 动画与彩蛋 ---
+    function simulateWave() {
+      if (!isPlaying) return;
+      const size = Math.random() * 15 + 10;
+      wave.style.boxShadow = `0 0 0 ${size}px rgba(255, 51, 51, 0.5)`;
+      animationId = requestAnimationFrame(simulateWave);
+    }
+
+    avatarEl.onclick = function() {
+      const tip = document.createElement('div');
+      tip.innerText = '😋 小哥哥';
+      tip.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:30px;color:#ff3333;z-index:999;animation:fade 2s ease-out;`;
+      document.body.appendChild(tip);
+      setTimeout(() => document.body.removeChild(tip), 2000);
+    };
+  </script>
+</body>
+</html>
