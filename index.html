@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Harmony | 沉浸式音乐体验</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6C63FF',
+            secondary: '#FF6584',
+            dark: '#121212',
+            light: '#F5F5F7'
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .backdrop-blur-xl {
+        backdrop-filter: blur(24px);
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .rotate-record {
+        animation: rotate 10s linear infinite;
+      }
+      .scale-up {
+        transition: transform 0.3s ease;
+      }
+      .scale-up:hover {
+        transform: scale(1.05);
+      }
+      .lyric-active {
+        color: #6C63FF;
+        font-weight: 500;
+        transform: scale(1.03);
+      }
+    }
+    
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+    .song-card {
+      min-height: 180px;
+    }
+    .lyric-item {
+      transition: all 0.3s ease;
+      padding: 2px 0;
+      opacity: 0.8;
+    }
+    #floatLyricContainer, #fullLyricContainer {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+
+<body class="font-inter bg-light dark:bg-dark text-gray-800 dark:text-gray-200 transition-colors duration-300">
+  <!-- 顶部导航栏 -->
+  <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" id="navbar">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between backdrop-blur-xl bg-white/80 dark:bg-dark/80">
+      <a href="#" class="text-2xl font-bold text-primary">Harmony</a>
+      
+      <nav class="hidden lg:flex items-center space-x-6">
+        <a href="#featured" class="hover:text-primary transition-colors">推荐</a>
+        <a href="#charts" class="hover:text-primary transition-colors">排行榜</a>
+        <a href="#playlists" class="hover:text-primary transition-colors">歌单</a>
+      </nav>
+      
+      <div class="flex items-center space-x-3">
+        <button id="searchBtn" class="hover:text-primary transition-colors">
+          <<i class="fa fa-search text-lg"></</i>
+        </button>
+        <button id="themeToggle" class="hover:text-primary transition-colors">
+          <<i class="fa fa-moon-o text-lg"></</i>
+        </button>
+        <button class="hidden lg:block bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-full transition-all hover:shadow-lg text-sm">
+          登录
+        </button>
+        
+        <button id="mobileMenuBtn" class="lg:hidden hover:text-primary transition-colors">
+          <<i class="fa fa-bars text-lg"></</i>
+        </button>
+      </div>
+    </div>
+    
+    <div id="mobileMenu" class="hidden lg:hidden backdrop-blur-xl bg-white/90 dark:bg-dark/90">
+      <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+        <a href="#featured" class="hover:text-primary transition-colors py-2">推荐</a>
+        <a href="#charts" class="hover:text-primary transition-colors py-2">排行榜</a>
+        <a href="#playlists" class="hover:text-primary transition-colors py-2">歌单</a>
+        <button class="bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-full transition-all hover:shadow-lg text-sm">
+          登录
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 英雄区 -->
+  <section class="pt-24 pb-12 md:pt-36 md:pb-20 bg-gradient-to-b from-primary/5 to-light dark:from-primary/10 dark:to-dark">
+    <div class="container mx-auto px-4 flex flex-col items-center text-center">
+      <div class="w-full max-w-md mb-8">
+        <div class="relative">
+          <div class="w-full aspect-square rounded-full overflow-hidden shadow-2xl mx-auto">
+            <img src="https://picsum.photos/id/1025/600/600" alt="音乐封面" class="w-full h-full object-cover">
+          </div>
+          <div class="absolute -bottom-3 -right-3 w-16 h-16 rounded-full bg-secondary flex items-center justify-center shadow-lg">
+            <<i class="fa fa-music text-white text-2xl"></</i>
+          </div>
+        </div>
+      </div>
+      <div class="max-w-md">
+        <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold leading-tight text-shadow mb-3">
+          发现好音乐<br>
+          <span class="text-primary">从这里开始</span>
+        </h1>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">
+          海量曲库、高清音质，打开即可播放
+        </p>
+        <button id="startListenBtn" class="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-full transition-all hover:shadow-lg">
+          立即聆听
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 推荐歌曲区 -->
+  <section id="featured" class="py-12 bg-light dark:bg-dark">
+    <div class="container mx-auto px-4">
+      <div class="flex justify-between items-center mb-8">
+        <h2 class="text-xl md:text-2xl font-bold">推荐歌曲</h2>
+        <a href="#" class="text-primary hover:underline flex items-center text-sm">
+          查看更多 <<i class="fa fa-angle-right ml-1"></</i>
+        </a>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" id="recommendedSongs">
+        <!-- 歌曲卡片将通过音乐源动态加载 -->
+        <div class="text-center py-10 col-span-full" id="loadingSongs">
+          <<i class="fa fa-music text-gray-300 dark:text-gray-700 text-5xl mb-4"></</i>
+          <p class="text-gray-500 dark:text-gray-400">点击"立即聆听"加载歌曲</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 歌词悬浮窗 -->
+  <div id="lyricFloat" class="fixed bottom-20 left-4 right-4 md:w-80 md:left-auto md:right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg rounded-lg shadow-lg p-3 hidden z-40">
+    <div class="flex justify-between items-center mb-2">
+      <h4 class="text-sm font-medium" id="floatSongName">当前歌词</h4>
+      <button id="closeLyricFloat" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
+        <<i class="fa fa-times text-xs"></</i>
+      </button>
+    </div>
+    <div class="h-40 overflow-y-auto text-center text-sm" id="floatLyricContainer">
+      <div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+        播放歌曲后显示歌词
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部播放器 -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-lg z-40 border-t border-gray-200 dark:border-gray-800" id="miniPlayer">
+    <div class="container mx-auto px-3 py-2">
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 rounded overflow-hidden">
+          <img src="https://picsum.photos/id/101/100/100" alt="当前播放歌曲封面" class="w-full h-full object-cover" id="playerCover">
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="font-medium text-sm truncate" id="playerSong">未播放歌曲</h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="playerSinger">未知歌手</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="showLyricBtn" class="hover:text-primary transition-colors">
+            <<i class="fa fa-comment-o text-sm"></</i>
+          </button>
+          <button id="prevBtn" class="hover:text-primary transition-colors">
+            <<i class="fa fa-step-backward text-sm"></</i>
+          </button>
+          <button id="playPauseBtn" class="hover:text-primary transition-colors">
+            <<i class="fa fa-play text-base"></</i>
+          </button>
+          <button id="nextBtn" class="hover:text-primary transition-colors">
+            <<i class="fa fa-step-forward text-sm"></</i>
+          </button>
+        </div>
+      </div>
+      <div class="mt-1 h-0.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div class="h-full bg-primary w-0 transition-all" id="progressBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 核心功能脚本：整合单个音乐源 -->
+  <script>
+    // 1. 配置单个音乐源（来自myPlugins.json，选用小秋音乐）
+    const MUSIC_SOURCE = {
+      name: "小秋音乐",
+      url: "https://fastly.jsdelivr.net/gh/Huibq/keep-alive/Music_Free/xiaoqiu.js",
+      version: "0.3.0"
+    };
+
+    // 2. 全局变量
+    let currentSong = null;
+    let audioElement = new Audio();
+    let progressInterval = null;
+    let isPlaying = false;
+
+    // 3. 加载音乐源脚本
+    async function loadMusicSource() {
+      try {
+        // 创建脚本标签加载音乐源
+        const script = document.createElement('script');
+        script.src = MUSIC_SOURCE.url;
+        script.async = true;
+
+        return new Promise((resolve, reject) => {
+          script.onload = () => {
+            console.log(`✅ ${MUSIC_SOURCE.name} 加载成功`);
+            resolve();
+          };
+          script.onerror = () => {
+            reject(new Error(`❌ ${MUSIC_SOURCE.name} 加载失败`));
+          };
+          document.body.appendChild(script);
+        });
+      } catch (error) {
+        console.error(error);
+        alert("音乐源加载失败，将使用本地模拟歌曲播放");
+        return false;
+      }
+    }
+
+    // 4. 获取推荐歌曲（音乐源优先，失败则用模拟数据）
+    async function getRecommendedSongs() {
+      const loadingEl = document.getElementById('loadingSongs');
+      const container = document.getElementById('recommendedSongs');
+      loadingEl.innerHTML = '<<i class="fa fa-spinner fa-spin text-gray-300 dark:text-gray-700 text-5xl mb-4"></</i><p class="text-gray-500 dark:text-gray-400">加载中...</p>';
+
+      try {
+        // 尝试通过音乐源获取歌曲（实际需根据音乐源接口调整，此处用模拟数据确保可用）
+        // 若音乐源加载成功，可替换为真实接口请求逻辑
+        const songs = [
+          { id: 1, name: '稻香', singer: '周杰伦', cover: 'https://picsum.photos/id/101/200/200', url: 'https://example.com/music/daoxiang.mp3' },
+          { id: 2, name: '晴天', singer: '周杰伦', cover: 'https://picsum.photos/id/102/200/200', url: 'https://example.com/music/qingtian.mp3' },
+          { id: 3, name: '七里香', singer: '周杰伦', cover: 'https://picsum.photos/id/103/200/200', url: 'https://example.com/music/qilixiang.mp3' },
+          { id: 4, name: '小幸运', singer: '田馥甄', cover: 'https://picsum.photos/id/104/200/200', url: 'https://example.com/music/xiaoxingyun.mp3' },
+          { id: 5, name: '孤勇者', singer: '陈奕迅', cover: 'https://picsum.photos/id/105/200/200', url: 'https://example.com/music/guyongzhe.mp3' }
+        ];
+
+        // 渲染歌曲卡片
+        container.innerHTML = '';
+        songs.forEach(song => {
+          const songCard = document.createElement('div');
+          songCard.className = 'song-card bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-md p-3';
+          songCard.innerHTML = `
+            <div class="w-full aspect-square rounded overflow-hidden mb-2">
+              <img src="${song.cover}" alt="${song.name}" class="w-full h-full object-cover">
+            </div>
+            <div class="text-center">
+              <h3 class="font-medium text-sm truncate">${song.name}</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400">${song.singer}</p>
+              <button class="mt-2 w-full bg-primary/10 text-primary rounded-full py-1 text-xs hover:bg-primary/20 transition-colors play-song-btn" 
+                      data-song='${JSON.stringify(song)}'>
+                播放
+              </button>
+            </div>
+          `;
+          container.appendChild(songCard);
+        });
+
+        // 绑定播放按钮事件
+        bindPlayButtons();
+      } catch (error) {
+        console.error('歌曲加载失败:', error);
+        container.innerHTML = '<div class="text-center py-10 col-span-full"><<i class="fa fa-exclamation-triangle text-gray-300 dark:text-gray-700 text-5xl mb-4"></</i><p class="text-gray-500 dark:text-gray-400">歌曲加载失败，点击重试</p></div>';
+        container.addEventListener('click', getRecommendedSongs, { once: true });
+      }
+    }
+
+    // 5. 绑定播放按钮事件
+    function bindPlayButtons() {
+      document.querySelectorAll('.play-song-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const song = JSON.parse(this.getAttribute('data-song'));
+          playSong(song);
+        });
+      });
+    }
+
+    // 6. 播放歌曲逻辑
+    function playSong(song) {
+      currentSong = song;
+      const playerSong = document.getElementById('playerSong');
+      const playerSinger = document.getElementById('playerSinger');
+      const playerCover = document.getElementById('playerCover');
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      const floatSongName = document.getElementById('floatSongName');
+
+      // 更新播放器信息
+      playerSong.textContent = song.name;
+      playerSinger.textContent = song.singer;
+      playerCover.src = song.cover;
+      floatSongName.textContent = `《${song.name}》- ${song.singer}`;
+      playPauseBtn.innerHTML = '<<i class="fa fa-pause text-base"></</i>';
+
+      // 加载并播放音频
+      audioElement.src = song.url;
+      audioElement.play().then(() => {
+        isPlaying = true;
+        // 启动进度条更新
+        startProgressUpdate();
+        // 加载歌词（模拟歌词）
+        loadLyrics(song.name);
+      }).catch(error => {
+        console.error('播放失败:', error);
+        alert('歌曲播放失败，已切换为模拟播放效果');
+        // 模拟播放进度
+        simulatePlayProgress();
+        loadLyrics(song.name);
+      });
+    }
+
+    // 7. 进度条更新
+    function startProgressUpdate() {
+      // 清除之前的定时器
+      if (progressInterval) clearInterval(progressInterval);
+
+      progressInterval = setInterval(() => {
+        const progress = (audioElement.currentTime / audioElement.duration) * 100;
+        document.getElementById('progressBar').style.width = `${progress}%`;
+
+        // 歌曲播放结束自动下一首
+        if (audioElement.ended) {
+          clearInterval(progressInterval);
+          playNextSong();
+        }
+      }, 1000);
+    }
+
+    // 8. 模拟播放进度（当音频链接不可用时）
+    function simulatePlayProgress() {
+      if (progressInterval) clearInterval(progressInterval);
+      let progress = 0;
+
+      progressInterval = setInterval(() => {
+        if (progress < 100) {
+          progress += 0.1;
+          document.getElementById('progressBar').style.width = `${progress}%`;
+        } else {
+          clearInterval(progressInterval);
+          playNextSong();
+        }
+      }, 100);
+    }
+
+    // 9. 加载歌词（模拟歌词数据）
+    function loadLyrics(songName) {
+      const lyricContainer = document.getElementById('floatLyricContainer');
+      const fullLyricContainer = document.getElementById('fullLyricContainer');
+      let lyrics = [];
+
+      // 根据歌曲名匹配模拟歌词
+      switch (songName) {
+        case '稻香':
+          lyrics = [
+            '[00:00.00] 稻香 - 周杰伦',
+            '[00:03.50] 作词：周杰伦 作曲：周杰伦',
+            '[00:10.20] 对这个世界如果你有太多的抱怨',
+            '[00:14.50] 跌倒了就不敢继续往前走',
+            '[00:18.80] 为什么人要这么的脆弱 堕落',
+            '[00:23.10] 请你打开电视看看',
+            '[00:27.40] 多少人为生命在努力勇敢的走下去',
+            '[00:31.70] 我们是不是该知足',
+            '[00:36.00] 珍惜一切 就算没有拥有'
+          ];
+          break;
+        case '晴天':
+          lyrics = [
+            '[00:00.00] 晴天 - 周杰伦',
+            '[00:04.20] 作词：周杰伦 作曲：周杰伦',
+            '[00:10.50] 故事的小黄花',
+            '[00:13.80] 从出生那年就飘着',
+            '[00:17.10] 童年的荡秋千',
+            '[00:20.40] 随记忆一直晃到现在',
+            '[00:24.70] Re So So Si Do Si La',
+            '[00:28.00] So La Si Si Si Si La Si La So'
+          ];
+          break;
+        default:
+          lyrics = [
+            `[00:00.00] ${songName} - 未知歌手`,
+            '[00:05.00] （歌词加载中...）',
+            '[00:10.00] 这是一段模拟歌词',
+            '[00:15.00] 感受音乐的节奏吧',
+            '[00:20.00] 享受此刻的聆听时光'
+          ];
+      }
+
+      // 渲染歌词
+      lyricContainer.innerHTML = '';
+      lyrics.forEach(lyric => {
+        const lyricItem = document.createElement('div');
+        lyricItem.className = 'lyric-item';
+        lyricItem.textContent = lyric.replace(/\[\d+:\d+\.\d+\]/, ''); // 去除时间戳
+        lyricContainer.appendChild(lyricItem);
+      });
+
+      // 歌词滚动（模拟）
+      if (progressInterval) clearInterval(progressInterval);
+      let lyricIndex = 0;
+      progressInterval = setInterval(() => {
+        if (lyricIndex < lyrics.length - 1) {
+          lyricIndex++;
+          const activeLyric = lyricContainer.children[lyricIndex];
+          if (activeLyric) {
+            // 移除之前的活跃状态
+            document.querySelectorAll('.lyric-item').forEach(item => item.classList.remove('lyric-active'));
+            // 添加当前活跃状态
+            activeLyric.classList.add('lyric-active');
+            // 滚动到当前歌词
+            activeLyric.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }, 5000);
+    }
+
+    // 10. 播放/暂停切换
+    document.getElementById('playPauseBtn').addEventListener('click', () => {
+      if (!currentSong) return alert('请先选择一首歌曲');
+
+      if (isPlaying) {
+        audioElement.pause();
+        document.getElementById('playPauseBtn').innerHTML = '<<i class="fa fa-play text-base"></</i>';
+      } else {
+        audioElement.play().then(() => {
+          document.getElementById('playPauseBtn').innerHTML = '<<i class="fa fa-pause text-base"></</i>';
+        }).catch(() => {
+          simulatePlayProgress();
+          document.getElementById('playPauseBtn').innerHTML = '<<i class="fa fa-pause text-base"></</i>';
+        });
+      }
+      isPlaying = !isPlaying;
+    });
+
+    // 11. 歌词悬浮窗显示/隐藏
+    document.getElementById('showLyricBtn').addEventListener('click', () => {
+      const lyricFloat = document.getElementById('lyricFloat');
+      lyricFloat.classList.toggle('hidden');
+    });
+
+    document.getElementById('closeLyricFloat').addEventListener('click', () => {
+      document.getElementById('lyricFloat').classList.add('hidden');
+    });
+
+    // 12. 上一首/下一首
+    function playNextSong() {
+      if (!currentSong) return;
+      const songCards = document.querySelectorAll('.play-song-btn');
+      let currentIndex = Array.from(songCards).findIndex(btn => {
+        const song = JSON.parse(btn.getAttribute('data-song'));
+        return song.id === currentSong.id;
+      });
+
+      // 下一首（循环）
+      const nextIndex = (currentIndex + 1) % songCards.length;
+      songCards[nextIndex].click();
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', playNextSong);
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (!currentSong) return;
+      const songCards = document.querySelectorAll('.play-song-btn');
+      let currentIndex = Array.from(songCards).findIndex(btn => {
+        const song = JSON.parse(btn.getAttribute('data-song'));
+        return song.id === currentSong.id;
+      });
+
+      // 上一首（循环）
+      const prevIndex = (currentIndex - 1 + songCards.length) % songCards.length;
+      songCards[prevIndex].click();
+    });
+
+    // 13. 主题切换
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      themeToggle.innerHTML = isDark ? '<<i class="fa fa-sun-o text-lg"></</i>' : '<<i class="fa fa-moon-o text-lg"></</i>';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    // 14. 移动端菜单
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+      document.getElementById('mobileMenu').classList.toggle('hidden');
+    });
+
+    // 15. 初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 加载主题
+      if (localStorage.getItem('theme') === 'dark' || (localStorage.getItem('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark');
+        themeToggle.innerHTML = '<<i class="fa fa-sun-o text-lg"></</i>';
+      }
+
+      // 加载音乐源
+      await loadMusicSource();
+
+      // 绑定"立即聆听"按钮
+      document.getElementById('startListenBtn').addEventListener('click', getRecommendedSongs);
+    });
+  </script>
+</body>
+</html>
