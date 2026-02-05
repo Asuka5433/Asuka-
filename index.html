@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蒋一凡专属页面 | 终极完整版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: manipulation;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  #particles-js { position: fixed; width: 100%; height: 100%; z-index: 0; }
+  .audio-wave {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: breathe 3s ease-in-out infinite;
+    z-index: 1;
+  }
+  .audio-wave.active { animation: pulse 0.5s ease infinite alternate; }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 0 5px rgba(255, 51, 51, 0.3); }
+    50% { box-shadow: 0 0 0 20px rgba(255, 51, 51, 0.2); }
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.1); opacity: 1; }
+  }
+  .avatar {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 5px solid #ff3333;
+    object-fit: cover;
+    position: absolute;
+    z-index: 2;
+    animation: rotate 20s linear infinite;
+    cursor: pointer;
+  }
+  @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .play-btn {
+    margin-top: 40px;
+    padding: 12px 30px;
+    font-size: 18px;
+    background: #ff3333;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 0 15px #ff3333;
+    transition: 0.3s;
+    z-index: 3;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover { background: #ff6666; transform: scale(1.05); }
+  .music-switch-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #333;
+    color: #fff;
+    border: 2px solid #ff3333;
+    font-size: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    z-index: 3;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .music-switch-btn:hover {
+    background: #ff3333;
+    transform: scale(1.1);
+  }
+  .music-control-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .music-name {
+    color: #fff;
+    margin-top: 15px;
+    font-size: 16px;
+    z-index: 3;
+    position: relative;
+    text-align: center;
+    max-width: 80%;
+  }
+
+  /* 紧急备用输入框样式 (解决加载慢/跨域问题) */
+  #emergencyBox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #333;
+    color: #fff;
+    padding: 10px;
+    z-index: 9999;
+    display: none; /* 默认隐藏 */
+  }
+  #emergencyBox textarea {
+    width: 100%;
+    height: 80px;
+    background: #444;
+    color: #eee;
+    border: 1px solid #ff3333;
+    margin: 5px 0;
+    padding: 5px;
+    font-size: 12px;
+  }
+
+  /* ====== 搜索功能样式 (完整保留) ====== */
+  .search-container {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    padding: 0 20px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #searchInput {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: 2px solid #ff3333;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+    box-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+  }
+  #searchInput::placeholder {
+    color: #999;
+  }
+  /* 搜索结果列表 */
+  .search-results {
+    margin-top: 10px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 0;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(255, 51, 51, 0.3);
+    transition: max-height 0.3s ease;
+  }
+  .search-results.show {
+    max-height: 200px; /* 展开高度 */
+    border: 1px solid #333;
+  }
+  .result-item {
+    padding: 10px 20px;
+    color: #fff;
+    cursor: pointer;
+    border-bottom: 1px solid #222;
+  }
+  .result-item:hover {
+    background: #ff3333;
+  }
+  /* 关键词高亮 */
+  .highlight {
+    color: #ff3333;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+  <!-- 紧急备用方案 (加载慢时手动用) -->
+  <div id="emergencyBox">
+    <strong>⚠️ 自动加载慢？手动粘贴最快：</strong>
+    <textarea id="jsonInput" placeholder="请把 https://13413.kstore.vip/QingMusic/music.json 打开后的内容复制粘贴到这里..."></textarea>
+    <button onclick="loadFromText()">手动加载</button>
+  </div>
+
+  <div id="particles-js"></div>
+  <div class="audio-wave" id="wave">
+    <img src="avatar.jpg" alt="蒋一凡头像" class="avatar" id="avatar">
+  </div>
+  <div class="music-control-group">
+    <button class="music-switch-btn" onclick="switchMusic('prev')">←</button>
+    <button class="play-btn" onclick="toggleMusic()" id="btn">尝试加载歌单...</button>
+    <button class="music-switch-btn" onclick="switchMusic('next')">→</button>
+  </div>
+  <div class="music-name" id="musicName">正在连接服务器...</div>
+
+  <!-- ====== 搜索功能 DOM (完整保留) ====== -->
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="搜索歌曲...">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
+  <audio id="bgm" preload="metadata">
+    <source src="" type="audio/mpeg" id="audioSource">
+    您的浏览器不支持音频播放
+  
+
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script>
+    // --- 粒子特效初始化 ---
+    particlesJS("particles-js", {
+      "particles": {
+        "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+        "color": { "value": "#ff3333" },
+        "shape": { "type": "circle" },
+        "opacity": { "value": 0.5, "random": true },
+        "size": { "value": 3, "random": true },
+        "line_linked": {
+          "enable": true, "distance": 150, "color": "#ff3333", "opacity": 0.2, "width": 1
+        },
+        "move": { "enable": true, "speed": 1, "direction": "none", "random": true }
+      },
+      "interactivity": {
+        "detect_on": "canvas",
+        "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" } }
+      },
+      "retina_detect": true
+    });
+
+    // --- 全局变量 ---
+    const audio = document.getElementById('bgm');
+    const audioSource = document.getElementById('audioSource');
+    const btn = document.getElementById('btn');
+    const wave = document.getElementById('wave');
+    const musicNameEl = document.getElementById('musicName');
+    const avatarEl = document.getElementById('avatar');
+    const emergencyBox = document.getElementById('emergencyBox');
+    const jsonInput = document.getElementById('jsonInput');
+    
+    // 搜索功能核心变量
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    
+    let musicList = []; // 原始完整歌单
+    let filteredList = []; // 搜索过滤后的歌单
+    let currentMusicIndex = 0;
+    let isPlaying = false;
+    let animationId;
+
+    // --- 1. 极速加载音乐源 (优化版) ---
+    const musicJsonUrl = "https://13413.kstore.vip/QingMusic/music.json";
+    
+    // 优化策略：超时控制 + 降级提示
+    const fetchWithTimeout = (url, timeout = 10000) => {
+      return Promise.race([
+        fetch(url).then(response => {
+          if (!response.ok) throw new Error("网络响应异常");
+          return response.json();
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("请求超时")), timeout))
+      ]);
+    };
+
+    // 自动加载
+    fetchWithTimeout(musicJsonUrl)
+      .then(data => {
+        handleLoadedData(data);
+        initSearch(); // 初始化搜索功能
+      })
+      .catch(error => {
+        console.error("自动加载失败：", error);
+        btn.innerText = "加载超时 ❌";
+        musicNameEl.innerText = "请使用顶部手动输入功能";
+        emergencyBox.style.display = "block"; // 显示备用方案
+      });
+
+    // 手动加载 (保底方案)
+    function loadFromText() {
+      try {
+        const jsonText = jsonInput.value.trim();
+        if (!jsonText) return alert("请先粘贴JSON内容！");
+        const data = JSON.parse(jsonText);
+        handleLoadedData(data);
+        initSearch(); // 初始化搜索功能
+        emergencyBox.style.display = "none";
+        alert("手动加载成功！");
+      } catch (e) {
+        alert("JSON格式错误，请检查！");
+      }
+    }
+
+    // --- 2. 处理音乐数据 ---
+    function handleLoadedData(data) {
+      // 兼容两种常见格式：{list: [...]} 或 直接数组
+      if (data.list && data.list.length > 0) {
+        musicList = data.list;
+      } else if (Array.isArray(data) && data.length > 0) {
+        musicList = data;
+      } else {
+        throw new Error("歌单格式不支持");
+      }
+      
+      filteredList = [...musicList]; // 初始化过滤列表
+      loadMusic(0);
+      btn.innerText = `点击播放 ${getName(0)}`;
+    }
+
+    // --- 3. 播放控制核心 ---
+    function getName(index) {
+      return filteredList[index]?.name || filteredList[index]?.title || "未知歌曲";
+    }
+
+    function loadMusic(index) {
+      if (!filteredList.length) return;
+      const song = filteredList[index];
+      audioSource.src = song.url || song.path;
+      audio.load(); // 触发加载
+      musicNameEl.innerText = `当前曲目：${getName(index)}`;
+      
+      // 缓冲提示
+      btn.innerText = "正在缓冲...";
+      audio.addEventListener('canplay', () => {
+        if (!isPlaying) btn.innerText = `点击播放 ${getName(index)}`;
+      }, { once: true });
+    }
+
+    function toggleMusic() {
+      if (!filteredList.length) return alert("歌单为空！");
+
+      if (isPlaying) {
+        audio.pause();
+        btn.innerText = `点击播放 ${getName(currentMusicIndex)}`;
+        wave.classList.remove('active');
+        cancelAnimationFrame(animationId);
+      } else {
+        audio.play().then(startPlaying).catch(err => {
+          // 浏览器拦截时的解锁逻辑
+          btn.innerText = "点击屏幕任意处解锁";
+          document.body.addEventListener('click', () => {
+            audio.play().then(startPlaying);
+          }, { once: true });
+        });
+      }
+      isPlaying = !isPlaying;
+    }
+
+    function startPlaying() {
+      btn.innerText = `正在播放... (点击暂停)`;
+      wave.classList.add('active');
+      simulateWave();
+    }
+
+    function switchMusic(type) {
+      if (!filteredList.length) return;
+      
+      // 切换时先暂停动画
+      if (isPlaying) {
+        audio.pause();
+        wave.classList.remove('active');
+        cancelAnimationFrame(animationId);
+        isPlaying = false;
+      }
+
+      // 计算新索引 (支持循环)
+      currentMusicIndex = type === 'prev' 
+        ? (currentMusicIndex - 1 + filteredList.length) % filteredList.length
+        : (currentMusicIndex + 1) % filteredList.length;
+      
+      loadMusic(currentMusicIndex);
+    }
+
+    function simulateWave() {
+      if (!isPlaying) return;
+      const randomSize = Math.random() * 15 + 10;
+      wave.style.boxShadow = `0 0 0 ${randomSize}px rgba(255, 51, 51, 0.5)`;
+      animationId = requestAnimationFrame(simulateWave);
+    }
+
+    // --- 4. 头像彩蛋 ---
+    avatarEl.onclick = function() {
+      const tip = document.createElement('div');
+      tip.innerText = '😋 小哥哥';
+      tip.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 30px;
+        color: #ff3333;
+        z-index: 999;
+        animation: fade 2s ease-out;
+      `;
+      document.body.appendChild(tip);
+      setTimeout(() => document.body.removeChild(tip), 2000);
+    };
+
+    // ====== 搜索功能核心逻辑 (完整无删减) ======
+    function initSearch() {
+      // 实时输入监听 (防抖优化，避免频繁渲染)
+      let debounceTimer;
+      searchInput.addEventListener('input', function(e) {
+        clearTimeout(debounceTimer);
+        const keyword = e.target.value.trim().toLowerCase();
+        
+        debounceTimer = setTimeout(() => {
+          if (!keyword) {
+            searchResults.classList.remove('show');
+            filteredList = [...musicList]; // 清空搜索时恢复原歌单
+            return;
+          }
+
+          // 过滤逻辑：匹配歌名或标题
+          const results = musicList.filter(song => {
+            const songName = (song.name || song.title || "").toLowerCase();
+            return songName.includes(keyword);
+          });
+
+          // 渲染搜索结果
+          renderSearchResults(results, keyword);
+        }, 300); // 300ms防抖，提升性能
+      });
+
+      // 点击空白处关闭搜索框
+      document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+          searchResults.classList.remove('show');
+        }
+      });
+    }
+
+    // 渲染搜索结果 (带关键词高亮)
+    function renderSearchResults(results, keyword) {
+      searchResults.classList.add('show');
+      
+      if (results.length === 0) {
+        searchResults.innerHTML = '<div class="result-item" style="text-align:center;color:#666;">无匹配歌曲</div>';
+        return;
+      }
+
+      // 更新过滤列表，用于切歌
+      filteredList = results;
+      currentMusicIndex = 0;
+
+      // 生成高亮HTML
+      let html = '';
+      results.forEach((song, index) => {
+        let displayName = song.name || song.title || "未知歌曲";
+        // 高亮关键词
+        const reg = new RegExp(keyword, 'gi');
+        displayName = displayName.replace(reg, match => `<span class="highlight">${match}</span>`);
+        
+        html += `<div class="result-item" onclick="playSearchResult(${index})">${displayName}</div>`;
+      });
+
+      searchResults.innerHTML = html;
+    }
+
+    // 点击搜索结果播放
+    function playSearchResult(index) {
+      currentMusicIndex = index;
+      loadMusic(index);
+      // 自动播放
+      audio.play().then(startPlaying).catch(() => {
+        audio.play().then(startPlaying);
+      });
+      isPlaying = true;
+      // 关闭搜索框
+      searchResults.classList.remove('show');
+      searchInput.blur(); // 收起手机键盘
+    }
+  </script>
+</body>
+</html>
