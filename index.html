@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蒋一凡专属播放器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  #particles-js { position: fixed; width: 100%; height: 100%; z-index: 0; }
+  .audio-wave {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: breathe 3s ease-in-out infinite;
+    z-index: 1;
+  }
+  .audio-wave.active { animation: pulse 0.5s ease infinite alternate; }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 0 5px rgba(255, 51, 51, 0.3); }
+    50% { box-shadow: 0 0 0 20px rgba(255, 51, 51, 0.2); }
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.1); opacity: 1; }
+  }
+  .avatar {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 5px solid #ff3333;
+    object-fit: cover;
+    position: absolute;
+    z-index: 2;
+    animation: rotate 20s linear infinite;
+    cursor: pointer;
+  }
+  @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .play-btn {
+    margin-top: 40px;
+    padding: 12px 30px;
+    font-size: 18px;
+    background: #ff3333;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 0 15px #ff3333;
+    transition: 0.3s;
+    z-index: 3;
+    position: relative;
+  }
+  .music-switch-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #333;
+    color: #fff;
+    border: 2px solid #ff3333;
+    font-size: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    z-index: 3;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .music-control-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .music-name {
+    color: #fff;
+    margin-top: 15px;
+    font-size: 16px;
+    z-index: 3;
+    text-align: center;
+  }
+  .search-container {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    padding: 0 20px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #searchInput {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: 2px solid #ff3333;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+  }
+  .search-results {
+    margin-top: 10px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 0;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.95);
+    border-radius: 15px;
+    transition: max-height 0.3s ease;
+  }
+  .search-results.show {
+    max-height: 200px;
+    border: 1px solid #333;
+  }
+  .result-item {
+    padding: 10px 20px;
+    color: #fff;
+    cursor: pointer;
+    border-bottom: 1px solid #222;
+  }
+  .result-item:hover {
+    background: #ff3333;
+  }
+  .highlight {
+    color: #ff3333;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <div class="audio-wave" id="wave">
+    <img src="avatar.jpg" alt="头像" class="avatar" id="avatar">
+  </div>
+  <div class="music-control-group">
+    <button class="music-switch-btn" onclick="switchMusic('prev')">←</button>
+    <button class="play-btn" onclick="toggleMusic()" id="btn">加载中...</button>
+    <button class="music-switch-btn" onclick="switchMusic('next')">→</button>
+  </div>
+  <div class="music-name" id="musicName">准备中...</div>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="搜索歌曲...">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
+  <audio id="bgm" preload="metadata">
+    <source src="" type="audio/mpeg" id="audioSource">
+  </audio>
+
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script>
+    particlesJS("particles-js", {
+      "particles": {
+        "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+        "color": { "value": "#ff3333" },
+        "shape": { "type": "circle" },
+        "opacity": { "value": 0.5, "random": true },
+        "size": { "value": 3, "random": true },
+        "line_linked": {
+          "enable": true, "distance": 150, "color": "#ff3333", "opacity": 0.2, "width": 1
+        },
+        "move": { "enable": true, "speed": 1, "direction": "none", "random": true }
+      },
+      "interactivity": {
+        "detect_on": "canvas",
+        "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" } }
+      }
+    });
+
+    const audio = document.getElementById('bgm');
+    const audioSource = document.getElementById('audioSource');
+    const btn = document.getElementById('btn');
+    const musicNameEl = document.getElementById('musicName');
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    
+    let musicList = [];
+    let filteredList = [];
+    let currentIndex = 0;
+    let isPlaying = false;
+
+    // 直接请求音乐源，内置错误处理
+    fetch("https://13413.kstore.vip/QingMusic/music.json")
+      .then(res => res.json())
+      .then(data => {
+        musicList = data.list || [];
+        filteredList = [...musicList];
+        if (filteredList.length > 0) {
+          loadMusic(0);
+          btn.innerText = `播放 ${filteredList[0].name}`;
+          musicNameEl.innerText = `当前：${filteredList[0].name}`;
+        } else {
+          btn.innerText = "歌单为空";
+        }
+      })
+      .catch(() => {
+        // 内置默认歌单（避免加载失败）
+        musicList = [
+          { name: "默认曲1", url: "https://example.com/1.mp3" },
+          { name: "默认曲2", url: "https://example.com/2.mp3" }
+        ];
+        filteredList = [...musicList];
+        loadMusic(0);
+        btn.innerText = `播放 ${filteredList[0].name}`;
+      });
+
+    function loadMusic(index) {
+      audioSource.src = filteredList[index].url;
+      audio.load();
+    }
+
+    function toggleMusic() {
+      if (!filteredList.length) return;
+      if (isPlaying) {
+        audio.pause();
+        btn.innerText = `播放 ${filteredList[currentIndex].name}`;
+      } else {
+        audio.play().then(() => {
+          btn.innerText = `暂停`;
+        }).catch(() => {
+          btn.innerText = "点击屏幕解锁";
+          document.body.addEventListener('click', () => audio.play(), { once: true });
+        });
+      }
+      isPlaying = !isPlaying;
+    }
+
+    function switchMusic(type) {
+      if (!filteredList.length) return;
+      currentIndex = type === 'prev' 
+        ? (currentIndex - 1 + filteredList.length) % filteredList.length
+        : (currentIndex + 1) % filteredList.length;
+      loadMusic(currentIndex);
+      btn.innerText = `播放 ${filteredList[currentIndex].name}`;
+      musicNameEl.innerText = `当前：${filteredList[currentIndex].name}`;
+      if (isPlaying) audio.play();
+    }
+
+    // 搜索功能
+    searchInput.addEventListener('input', (e) => {
+      const keyword = e.target.value.toLowerCase();
+      filteredList = musicList.filter(song => 
+        song.name.toLowerCase().includes(keyword)
+      );
+      searchResults.innerHTML = filteredList.map((song, i) => 
+        `<div class="result-item" onclick="playResult(${i})">${song.name}</div>`
+      ).join('');
+      searchResults.classList.toggle('show', keyword);
+    });
+
+    function playResult(index) {
+      currentIndex = index;
+      loadMusic(index);
+      audio.play();
+      isPlaying = true;
+      btn.innerText = "暂停";
+      musicNameEl.innerText = `当前：${filteredList[index].name}`;
+      searchResults.classList.remove('show');
+    }
+  </script>
+</body>
+</html>
